@@ -15,9 +15,7 @@
         <args>  
             <!-- values for x,y,z. If the device moved in x direction, the amount/speed of that, or, a boolean value saying that a rotation
             was performed by that axes.
-            0 -> x
-            1 -> y
-            2 -> z-->
+            -->
             <roll>
                 1
             </roll>
