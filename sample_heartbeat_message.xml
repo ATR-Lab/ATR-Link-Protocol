@@ -1,0 +1,19 @@
+<message>
+    <header>    <!-- Information about the device -->
+        <name> Wearable 1 </name>
+        <id> 1234 </id>
+        <timestamp> 123456789 </timestamp>
+        <sub_device_id> 2 </sub_device_id>  <!-- identifies one of the following 
+        1 -> IMU
+        2 -> Heartbeat
+        3 -> Vibrating Motor
+        ... (more)
+        -->
+    </header>
+    <command>
+        <opcode> IMU </opcode> <!-- identify operation or data type, in this case, imu data -->
+        <args>  
+            <!-- Need to know how heart beat values are generated using the sensor -->
+        </args>
+    </command>
+</message>
