@@ -2,12 +2,12 @@
 //Libraries
 #include <Adafruit_MPU6050.h> //IMU
 #include <Adafruit_Sensor.h>  //IMU
-#include <Adafruit_GFX.h>     //OLED
-#include <Adafruit_SSD1306.h> //OLED
+#include "SSD1306Ascii.h"     //OLED
+#include "SSD1306AsciiWire.h" //OLED
 #include "MAX30105.h"         //HEART
 #include "heartRate.h"        //HEART
 #include <Wire.h>             //I2C
-#include <SoftwareSerial.h>   //BLUETOOTH
+//#include <SoftwareSerial.h> //BLUETOOTH
 
 //Device Information
 #define DEVICE_NAME "Wearable 1"
@@ -37,25 +37,24 @@ int beatAvg = 0;
 //Vibration Motor
 #define VIBRATION_MOTOR_PIN A3
 
-/*
 //OLED
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 #define OLED_RESET    -1
 #define SCREEN_ADDRESS 0x3C
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-*/
+SSD1306AsciiWire oled;
 
+/*
 //Bluetooth Setup
 #define RX 2
 #define TX 3
 SoftwareSerial Bluetooth(RX, TX);
-
+*/
 
 void setup() {
-  //InitializeOLED();
+  InitializeOLED();
   InitializeSerial();
-  InitializeBluetooth();
+  //InitializeBluetooth();
   InitializeIMU();
   InitializeHeartRateSensor();
 
@@ -73,16 +72,22 @@ void loop() {
   //SendXML(IMU_SENSOR);
   SendXML(HEART_RATE_SENSOR);
   //SendXML(VIBRATION_MOTOR);
-  //UpdateOLED();
+
+  //Maybe add a timer for this call so that the OLED doesn't flicker
+  UpdateOLED();
+
+  SetVibrationMotor(0);
 }
 
 void InitializeSerial() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
+/*
 void InitializeBluetooth() {
   Bluetooth.begin(9600);
 }
+*/
 
 void InitializeIMU() {
   if (!imu.begin()) {
@@ -107,29 +112,26 @@ void InitializeHeartRateSensor() {
   heartRateSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
 }
 
-/*
 void InitializeOLED() {
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;); // Don't proceed, loop forever
-  }
-  display.setTextColor(WHITE);
-  display.clearDisplay();
-  //display.display();
-  //UpdateOLED();
-  delay(500);
+  oled.begin(&Adafruit128x32, SCREEN_ADDRESS);
+  oled.setFont(System5x7);
+  oled.clear();
 }
 
 void UpdateOLED() {
-  display.setTextSize(2);
-  display.setCursor(0, 0);
-  display.println("TEST7");
-  display.setTextSize(1);
-  display.display();
-  delay(500);
+  oled.clear();
+  oled.setCursor(0,0);
+  oled.print("BPM: ");
+  oled.println(beatsPerMinute);
+  oled.println();
+  oled.println();
+  oled.print("X: ");
+  oled.print(roll);
+  oled.print(" Y: ");
+  oled.print(pitch);
+  oled.print(" Z: ");
+  oled.print(yaw);
 }
-*/
 
 // Reads current values of IMU
 void ReadIMU() {
@@ -187,6 +189,8 @@ void SendXML(int sub_device_id) {
       break;
     case 3:
       deviceXML = "<motor_status>" + String(digitalRead(VIBRATION_MOTOR_PIN)) + "</motor_status>";
+      opcode = "VIBRARTION_MOTOR";
+      break;
   }
 
   String XML;
@@ -200,7 +204,12 @@ void SendXML(int sub_device_id) {
           String("</header>") +
           String("<command>") +
           String("<opcode>") + opcode + "</opcode>";
+  //These strings are send separately because it wouldn't work when concatenated. I think it was a memory issue, maybe?
   Serial.print(XML);
   Serial.print(deviceXML);
   Serial.println("</args></command></message>");
+}
+
+void SetVibrationMotor(bool b){
+  digitalWrite(VIBRATION_MOTOR_PIN, b);
 }
