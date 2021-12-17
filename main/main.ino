@@ -58,7 +58,7 @@ void setup() {
   InitializeIMU();
   InitializeHeartRateSensor();
 
-  //vibration motor pin
+  //vibration motor setup
   pinMode(VIBRATION_MOTOR_PIN, OUTPUT);
 }
 
@@ -76,7 +76,7 @@ void loop() {
   //Maybe add a timer for this call so that the OLED doesn't flicker
   UpdateOLED();
 
-  SetVibrationMotor(0);
+  //SetVibrationMotor(0);
 }
 
 void InitializeSerial() {
