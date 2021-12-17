@@ -41,7 +41,7 @@ int beatAvg = 0;
 //OLED
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
-#define OLED_RESET    4
+#define OLED_RESET    -1
 #define SCREEN_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 */
@@ -70,11 +70,10 @@ void loop() {
   ReadHeartRate();
 
   /*Send XML for Devices*/
-  SendXML(IMU_SENSOR);
-  //SendXML(IMU_SENSOR, Bluetooth);
-  //SendXML(HEART_RATE_SENSOR);
+  //SendXML(IMU_SENSOR);
+  SendXML(HEART_RATE_SENSOR);
   //SendXML(VIBRATION_MOTOR);
-
+  //UpdateOLED();
 }
 
 void InitializeSerial() {
@@ -125,7 +124,7 @@ void InitializeOLED() {
 void UpdateOLED() {
   display.setTextSize(2);
   display.setCursor(0, 0);
-  display.println("TEST4");
+  display.println("TEST7");
   display.setTextSize(1);
   display.display();
   delay(500);
@@ -183,7 +182,7 @@ void SendXML(int sub_device_id) {
       opcode = "IMU";
       break;
     case 2:
-      deviceXML = "<ir>" + String(irValue) + "</ir><bpm>" + String(beatsPerMinute) + "</bpm><avg_bpm>" + String(beatAvg) + "</avg_bpm>";
+      deviceXML = "<bpm>" + String(beatsPerMinute) + "</bpm><avg_bpm>" + String(beatAvg) + "</avg_bpm>";
       opcode = "HEART_RATE_SENSOR";
       break;
     case 3:
