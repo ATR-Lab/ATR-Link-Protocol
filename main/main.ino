@@ -2,21 +2,21 @@
 //Libraries
 #include <Adafruit_MPU6050.h> //IMU
 #include <Adafruit_Sensor.h>  //IMU
-#include "SSD1306Ascii.h"     //OLED
-#include "SSD1306AsciiWire.h" //OLED
-#include "MAX30105.h"         //HEART
-#include "heartRate.h"        //HEART
+//#include "SSD1306Ascii.h"     //OLED
+//#include "SSD1306AsciiWire.h" //OLED
+//#include "MAX30105.h"         //HEART
+//#include "heartRate.h"        //HEART
 #include <Wire.h>             //I2C
+#include "atr_wearable.h"
+#include "constants.h"
+#include "TinyXML.h"
 //#include <SoftwareSerial.h> //BLUETOOTH
 
 //Device Information
 #define DEVICE_NAME "Wearable 1"
 #define DEVICE_ID 1234
 
-//Sub-device IDs
-#define IMU_SENSOR        1
-#define HEART_RATE_SENSOR 2
-#define VIBRATION_MOTOR   3
+
 
 //IMU setup
 Adafruit_MPU6050 imu;
@@ -25,73 +25,74 @@ long pitch = 0;
 long yaw = 0;
 
 //Heart Rate Setup
-MAX30105 heartRateSensor;
-const byte RATE_SIZE = 4; //Increase this for more averaging. 4 is good.
-byte rates[RATE_SIZE]; //Array of heart rates
-byte rateSpot = 0;
-long lastBeat = 0; //Time at which the last beat occurred
-long irValue = 0;
-float beatsPerMinute = 0;
-int beatAvg = 0;
+//MAX30105 heartRateSensor;
+//const byte RATE_SIZE = 4; //Increase this for more averaging. 4 is good.
+//byte rates[RATE_SIZE]; //Array of heart rates
+//byte rateSpot = 0;
+//long lastBeat = 0; //Time at which the last beat occurred
+//long irValue = 0;
+//float beatsPerMinute = 0;
+//int beatAvg = 0;
 
-//Vibration Motor
-#define VIBRATION_MOTOR_PIN A3
+char opcode[2];
 
-//OLED
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 32 // OLED display height, in pixels
-#define OLED_RESET    -1
-#define SCREEN_ADDRESS 0x3C
-SSD1306AsciiWire oled;
+//SSD1306AsciiWire oled;
 
-/*
-//Bluetooth Setup
-#define RX 2
-#define TX 3
-SoftwareSerial Bluetooth(RX, TX);
-*/
+char buffer_[32];
+TinyXML xmlParser;
 
 void setup() {
-  InitializeOLED();
+  //InitializeOLED();
   InitializeSerial();
-  //InitializeBluetooth();
   InitializeIMU();
-  InitializeHeartRateSensor();
-
+  //InitializeHeartRateSensor();
+  xmlParser.init((uint8_t*)&buffer_,32,&XML_callback);
   //vibration motor setup
   pinMode(VIBRATION_MOTOR_PIN, OUTPUT);
 }
 
 void loop() {
+  //Serial.println("loop");
+  int mByte;
+  mByte = Serial.read();
+  if (mByte != -1){
+    if(mByte != '%' && mByte != 10){
+      //Serial.println((char)mByte);
+      xmlParser.processChar((char)mByte);
+    }
+    else if(mByte == '%'){
+      if(opcode[0] == '1' && opcode[1] == '0'){ // IMU
+        ReadIMU();
+        SendXML(1);
+      }
+    }
+  }
 
-  /*Read Devices*/
-  ReadIMU();
-  ReadHeartRate();
+  /* Read Devices */
+  
+  
+//  ReadIMU();
+//  ReadHeartRate();
+//
+//  /* Send XML for Devices */
+//  // SendXML(IMU_SENSOR);
+//  SendXML(HEART_RATE_SENSOR);
+//  // SendXML(VIBRATION_MOTOR);
+//
+//  // Maybe add a timer for this call so that the OLED doesn't flicker
+//  UpdateOLED();
 
-  /*Send XML for Devices*/
-  //SendXML(IMU_SENSOR);
-  SendXML(HEART_RATE_SENSOR);
-  //SendXML(VIBRATION_MOTOR);
-
-  //Maybe add a timer for this call so that the OLED doesn't flicker
-  UpdateOLED();
-
-  //SetVibrationMotor(0);
 }
 
 void InitializeSerial() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 }
 
-/*
-void InitializeBluetooth() {
-  Bluetooth.begin(9600);
-}
-*/
+
 
 void InitializeIMU() {
   if (!imu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
+    //Serial.println("Failed to find MPU6050 chip");
     while (1) {
       delay(10);
     }
@@ -100,7 +101,7 @@ void InitializeIMU() {
   imu.setGyroRange(MPU6050_RANGE_500_DEG);
   imu.setFilterBandwidth(MPU6050_BAND_21_HZ);
 }
-
+/*
 void InitializeHeartRateSensor() {
   if (!heartRateSensor.begin(Wire, I2C_SPEED_FAST)) //Use default I2C port, 400kHz speed
   {
@@ -111,7 +112,8 @@ void InitializeHeartRateSensor() {
   heartRateSensor.setPulseAmplitudeRed(0x0A); //Turn Red LED to low to indicate sensor is running
   heartRateSensor.setPulseAmplitudeGreen(0); //Turn off Green LED
 }
-
+*/
+/*
 void InitializeOLED() {
   oled.begin(&Adafruit128x32, SCREEN_ADDRESS);
   oled.setFont(System5x7);
@@ -132,7 +134,7 @@ void UpdateOLED() {
   oled.print(" Z: ");
   oled.print(yaw);
 }
-
+*/
 // Reads current values of IMU
 void ReadIMU() {
 
@@ -144,7 +146,7 @@ void ReadIMU() {
   yaw = a.acceleration.y;
 
 }
-
+/*
 // Reads current IR value of heart rate sensor, calculates BPM, and returns XML string
 void ReadHeartRate() {
   irValue = heartRateSensor.getIR();
@@ -171,7 +173,7 @@ void ReadHeartRate() {
 
   }
 }
-
+*/
 // Generates XML string from template and sends over serial
 void SendXML(int sub_device_id) {
 
@@ -179,37 +181,83 @@ void SendXML(int sub_device_id) {
   String opcode;
   //read device data and generate command XML
   switch (sub_device_id) {
-    case 1:
-      deviceXML = "<roll>" + String(roll) + "</roll><pitch>" + String(pitch) + "</pitch><yaw>" + String(yaw) + "</yaw>";
-      opcode = "IMU";
+    case IMU_SENSOR:
+      // To save memory, I guess
+      Serial.print("<message>");
+        Serial.print("<header>");
+        Serial.print("</header>");
+        Serial.print("<data>");
+          Serial.print("<");
+          Serial.print(XML_TAG_DATA_IMU);
+          Serial.print(">");
+            Serial.print("<roll>");
+              Serial.print(String(roll));
+            Serial.print("</roll>");
+            Serial.print("<pitch>");
+              Serial.print(String(pitch));
+            Serial.print("</pitch>");
+            Serial.print("<yaw>");
+              Serial.print(String(pitch));
+            Serial.print("</yaw>");
+        Serial.print("</");
+        Serial.print(XML_TAG_CMD_IMU);
+        Serial.print(">");
+      Serial.print("<data>");
+      Serial.print("</message>");
       break;
+    /*
     case 2:
       deviceXML = "<bpm>" + String(beatsPerMinute) + "</bpm><avg_bpm>" + String(beatAvg) + "</avg_bpm>";
-      opcode = "HEART_RATE_SENSOR";
+      opcode = HEART_BEAT_SENSOR_CMD;
       break;
     case 3:
       deviceXML = "<motor_status>" + String(digitalRead(VIBRATION_MOTOR_PIN)) + "</motor_status>";
-      opcode = "VIBRARTION_MOTOR";
+      opcode = VIBRATION_MOTOR_CMD;
       break;
+     */
   }
-
-  String XML;
-  //generate message
-  XML =   "<message>" +
-          String("<header>") +
-          String("<name>") + DEVICE_NAME + "</name>" +
-          String("<id>") + DEVICE_ID + "</id>" +
-          String("<timestamp>") + 123456 + "</timestamp>" +
-          String("<sub_device_id>") + sub_device_id + "</sub_device_id>" +
-          String("</header>") +
-          String("<command>") +
-          String("<opcode>") + opcode + "</opcode>";
-  //These strings are send separately because it wouldn't work when concatenated. I think it was a memory issue, maybe?
-  Serial.print(XML);
-  Serial.print(deviceXML);
-  Serial.println("</args></command></message>");
 }
 
 void SetVibrationMotor(bool b){
   digitalWrite(VIBRATION_MOTOR_PIN, b);
+}
+
+
+void XML_callback( uint8_t statusflags, char* tagName, uint16_t tagNameLen, char* data, uint16_t dataLen){
+  //Serial.println("parsing");
+  if (statusflags & STATUS_START_TAG) {
+    if (tagNameLen) {
+      //Serial.print("Start tag ");
+      //Serial.println(tagName);
+    }
+  }
+  else if  (statusflags & STATUS_END_TAG){
+    //Serial.println(tagName);
+  
+  }
+  else if  (statusflags & STATUS_TAG_TEXT){
+    //Serial.print("Tag:");
+    //Serial.print(tagName);
+    //Serial.print(" text:");
+    //Serial.println(data);
+
+    if(String(tagName) == String("/message/command/opcode")){
+      opcode[0] = data[0];
+      opcode[1] = data[1];
+    }
+  }
+  else if  (statusflags & STATUS_ATTR_TEXT){
+    //Serial.print("Attribute:");
+    //Serial.print(tagName);
+    //Serial.print(" text:");
+    //Serial.println(data);
+  }
+  else if  (statusflags & STATUS_ERROR){
+    //Serial.print("XML Parsing error  Tag:");
+    //Serial.print(tagName);
+    //Serial.print(" text:");
+    //Serial.println(data);
+  }
+
+
 }
