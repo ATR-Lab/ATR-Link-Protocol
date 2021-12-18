@@ -187,9 +187,6 @@ void SendXML(int sub_device_id) {
         Serial.print("<header>");
         Serial.print("</header>");
         Serial.print("<data>");
-          Serial.print("<");
-          Serial.print(XML_TAG_DATA_IMU);
-          Serial.print(">");
             Serial.print("<roll>");
               Serial.print(String(roll));
             Serial.print("</roll>");
@@ -199,11 +196,8 @@ void SendXML(int sub_device_id) {
             Serial.print("<yaw>");
               Serial.print(String(pitch));
             Serial.print("</yaw>");
-        Serial.print("</");
-        Serial.print(XML_TAG_CMD_IMU);
-        Serial.print(">");
-      Serial.print("<data>");
-      Serial.print("</message>");
+      Serial.print("</data>");
+      Serial.print("</message>%");
       break;
     /*
     case 2:
