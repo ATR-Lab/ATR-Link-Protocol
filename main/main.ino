@@ -70,13 +70,13 @@ void loop() {
 
   /*Send XML for Devices*/
   //SendXML(IMU_SENSOR);
-  SendXML(HEART_RATE_SENSOR);
+  //SendXML(HEART_RATE_SENSOR);
   //SendXML(VIBRATION_MOTOR);
 
   //Maybe add a timer for this call so that the OLED doesn't flicker
   UpdateOLED();
 
-  //SetVibrationMotor(0);
+  //SetVibrationMotor(1);
 }
 
 void InitializeSerial() {
@@ -122,7 +122,11 @@ void UpdateOLED() {
   oled.clear();
   oled.setCursor(0,0);
   oled.print("BPM: ");
-  oled.println(beatsPerMinute);
+  if(irValue < 50000){
+    oled.println("No finger!");
+  }else{
+    oled.println(beatsPerMinute);
+  }
   oled.println();
   oled.println();
   oled.print("X: ");
