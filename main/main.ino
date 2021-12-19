@@ -37,12 +37,14 @@ int beatAvg = 0;
 char opcode[2];
 int opcodeidx = 0;
 SSD1306AsciiWire oled;
+static int oledRefreshRate = 100; //Refresh OLED after so many loops
+int oledTimer = 0;
 
 
 void setup() {
-  //InitializeOLED();
+  InitializeOLED();
   Serial.begin(9600);
-  Serial.println("Setup");Serial.flush();
+  Serial.println("Setup"); Serial.flush();
   InitializeIMU();
   //InitializeHeartRateSensor();
   //vibration motor setup
@@ -88,18 +90,23 @@ void InitializeOLED() {
 }
 
 void UpdateOLED() {
-  oled.clear();
-  oled.setCursor(0,0);
-  oled.print("BPM: ");
-  oled.println(beatsPerMinute);
-  oled.println();
-  oled.println();
-  oled.print("X: ");
-  oled.print(roll);
-  oled.print(" Y: ");
-  oled.print(pitch);
-  oled.print(" Z: ");
-  oled.print(yaw);
+  if(oledTimer > oledRefreshRate){
+    oled.clear();
+    oled.setCursor(0, 0);
+    oled.print("BPM: ");
+    oled.println(beatsPerMinute);
+    oled.println();
+    oled.println();
+    oled.print("X: ");
+    oled.print(roll);
+    oled.print(" Y: ");
+    oled.print(pitch);
+    oled.print(" Z: ");
+    oled.print(yaw);
+    oledTimer = 0; //reset OLED refresh timer
+  }else{
+    oledTimer++;
+  }
 }
 
 // Reads current values of IMU
@@ -107,7 +114,7 @@ void ReadIMU() {
   //Serial.println("Asche 1");Serial.flush();
   sensors_event_t a, g, temp;
   imu.getEvent(&a, &g, &temp);
-  
+
   roll = a.acceleration.z;
   pitch = a.acceleration.x;
   yaw = a.acceleration.y;
@@ -116,10 +123,10 @@ void ReadIMU() {
   float accelerationY = (int16_t)(a.acceleration.y * CONVERSIONG);
   float accelerationZ = (int16_t)(a.acceleration.z * CONVERSIONG);
   //pitch = 180 * atan2 (accelerationX,sqrt(accelerationY*accelerationY + accelerationZ*accelerationZ))/M_PI;
-  roll = 180 * atan2 (-accelerationY, accelerationZ)/M_PI;
+  roll = 180 * atan2 (-accelerationY, accelerationZ) / M_PI;
   //yaw = 180 * atan2 (accelerationZ,sqrt(accelerationX*accelerationX + accelerationZ*accelerationZ))/M_PI;
   //Serial.println("asche");Serial.flush();
-  SendXML(1);
+  //SendXML(1);
 }
 
 // Reads current IR value of heart rate sensor, calculates BPM.
@@ -149,7 +156,7 @@ void ReadHeartRate() {
     //Serial.println(beatAvg);
   }
   SendXML(2);
-  
+
 }
 
 // Generates XML string from template and sends over serial
@@ -161,35 +168,35 @@ void SendXML(int sub_device_id) {
   switch (sub_device_id) {
     case IMU_SENSOR:
       // To save memory, I guess
-        Serial.print("{");Serial.flush();
-        Serial.print("\'type\': \'IMU\',");Serial.flush();
-        Serial.print("\'roll\':"); Serial.flush();
-        Serial.print(String(roll));Serial.flush();
-        //Serial.print(",");Serial.flush();
-        //Serial.print("\'pitch\':"); Serial.flush();
-        //Serial.print(String(pitch));Serial.flush();
-        //Serial.print(",");Serial.flush();
-        //Serial.print("\'yaw\':"); Serial.flush();
-        //Serial.print(String(yaw));Serial.flush();
-        Serial.print("}%"); Serial.flush();
-    break;
+      Serial.print("{"); Serial.flush();
+      Serial.print("\'type\': \'IMU\',"); Serial.flush();
+      Serial.print("\'roll\':"); Serial.flush();
+      Serial.print(String(roll)); Serial.flush();
+      //Serial.print(",");Serial.flush();
+      //Serial.print("\'pitch\':"); Serial.flush();
+      //Serial.print(String(pitch));Serial.flush();
+      //Serial.print(",");Serial.flush();
+      //Serial.print("\'yaw\':"); Serial.flush();
+      //Serial.print(String(yaw));Serial.flush();
+      Serial.print("}%"); Serial.flush();
+      break;
     case 2:
-        Serial.print("{"); Serial.flush();
-        Serial.print("\'type\': \'BPM\',");Serial.flush();
-        Serial.print("\'bpm\':"); Serial.flush();
-        Serial.print(String(beatAvg)); Serial.flush();
-        Serial.print("}%"); Serial.flush();
+      Serial.print("{"); Serial.flush();
+      Serial.print("\'type\': \'BPM\',"); Serial.flush();
+      Serial.print("\'bpm\':"); Serial.flush();
+      Serial.print(String(beatAvg)); Serial.flush();
+      Serial.print("}%"); Serial.flush();
       break;
-    /*
-    case 3:
-      deviceXML = "<motor_status>" + String(digitalRead(VIBRATION_MOTOR_PIN)) + "</motor_status>";
-      opcode = VIBRATION_MOTOR_CMD;
-      break;
-     */
+      /*
+        case 3:
+        deviceXML = "<motor_status>" + String(digitalRead(VIBRATION_MOTOR_PIN)) + "</motor_status>";
+        opcode = VIBRATION_MOTOR_CMD;
+        break;
+      */
   }
 }
 
-void SetVibrationMotor(bool b){
+void SetVibrationMotor(bool b) {
   digitalWrite(VIBRATION_MOTOR_PIN, b);
 }
 
@@ -198,13 +205,13 @@ void loop() {
   //Serial.println("loop");Serial.flush();
   ReadIMU();
   //ReadHeartRate();
-  //UpdateOLED();
+  UpdateOLED();
   //delay(100);
   /*
-  int mByte;
-  mByte = Serial.read();
-  
-  if (mByte != -1){
+    int mByte;
+    mByte = Serial.read();
+
+    if (mByte != -1){
     Serial.print(mByte,DEC);Serial.flush();
       opcode[opcodeidx++] = mByte;
     }
@@ -233,22 +240,22 @@ void loop() {
       Serial.print("%");
       Serial.flush();
     }
-  }
-  
+    }
 
-  /* Read Devices */
-  
-  
-//  ReadIMU();
-//  ReadHeartRate();
-//
-//  /* Send XML for Devices */
-//  // SendXML(IMU_SENSOR);
-//  SendXML(HEART_RATE_SENSOR);
-//  // SendXML(VIBRATION_MOTOR);
-//
-//  // Maybe add a timer for this call so that the OLED doesn't flicker
-//  UpdateOLED();
- 
+
+    /* Read Devices */
+
+
+  //  ReadIMU();
+  //  ReadHeartRate();
+  //
+  //  /* Send XML for Devices */
+  //  // SendXML(IMU_SENSOR);
+  //  SendXML(HEART_RATE_SENSOR);
+  //  // SendXML(VIBRATION_MOTOR);
+  //
+  //  // Maybe add a timer for this call so that the OLED doesn't flicker
+  //  UpdateOLED();
+
 
 }
