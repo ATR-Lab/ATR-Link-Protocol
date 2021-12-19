@@ -18,6 +18,8 @@
 #define XML_TAG_COMMAND ('7')
 #define XML_TAG_OPCODE ('8')
 
+#define CONVERSIONG 3.9
+
 // Opcodes
 #define XML_TAG_CMD_IMU ("10")
 #define XML_TAG_DATA_IMU ("11")
