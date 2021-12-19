@@ -195,7 +195,7 @@ void SetVibrationMotor(bool b){
 
 
 void loop() {
-  Serial.println("loop");Serial.flush();
+  //Serial.println("loop");Serial.flush();
   ReadIMU();
   //ReadHeartRate();
   //UpdateOLED();
